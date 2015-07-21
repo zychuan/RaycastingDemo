@@ -2,7 +2,12 @@
 !*.cpp
 !*.hpp
 !*.h
+!*.frag
+!*.vert
+!*.raw
 !src/
+!shaders/
+!media/
 !.gitignore
 !Makefile
 !README*
