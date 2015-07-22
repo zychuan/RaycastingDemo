@@ -11,3 +11,8 @@
 !.gitignore
 !Makefile
 !README*
+
+# vs project
+!*.sln
+!*.vcxproj
+!*.vcxproj.filters
