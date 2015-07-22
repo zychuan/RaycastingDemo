@@ -12,14 +12,14 @@ int WindowHeight = 1024;
 //////////////////////////window
 //camera transform variables
 bool isPressed = false;
-int state = 0, oldX = 0, oldY = 0;
-float rX = 4, rY = 50, dist = -180;
+int oldX = 0, oldY = 0;
+float rX = 10.0f, rY = 10.0f, dist = 2.2f;
 
 //grid object
 CGrid* grid;
 
 //modelview projection matrices
-glm::mat4 MV, P;
+glm::mat4 MV,M, V, P;
 
 float last_time = 0, current_time = 0;
 
@@ -90,7 +90,7 @@ void initGL() {
 	GL_CHECK_ERRORS
 
 	// create a uniform grid of size 20x20 in XZ plane
-	// grid = new CGrid(20, 20);
+	grid = new CGrid(20, 20);
 
 	GL_CHECK_ERRORS
 	
@@ -185,7 +185,7 @@ void cameraInit(int w, int h)
 {
 	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
 	//setup the projection matrix
-	P = glm::perspective(glm::radians(45.0f), (float)w / (float)h, 0.1f, 1000.0f);
+	P = glm::perspective(45.0f, (float)w / (float)h, 0.1f, 1000.0f);
 }
 
 void mainLoop(GLFWwindow* window)
@@ -196,11 +196,18 @@ void mainLoop(GLFWwindow* window)
 	while (!glfwWindowShouldClose(window)) {
 		GL_CHECK_ERRORS
 
+		glm::mat4 V = glm::lookAt(
+			glm::vec3(0.0f, 0.0f, dist),
+			glm::vec3(0.0f, 0.0f, 0.0f),
+			glm::vec3(0, 1, 0)
+		);
+		
 		//set the camera transform
-		glm::mat4 Tr = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, dist));
-		glm::mat4 Rx = glm::rotate(Tr, rX, glm::vec3(1.0f, 0.0f, 0.0f));
-		glm::mat4 MV = glm::rotate(Rx, rY, glm::vec3(0.0f, 1.0f, 0.0f));
-
+		//glm::mat4 Rx = glm::rotate(Tr, rX, glm::vec3(1.0f, 0.0f, 0.0f));
+		//glm::mat4 MV = glm::rotate(Rx, rY, glm::vec3(0.0f, 1.0f, 0.0f));
+		M = glm::rotate(glm::mat4(1.0f), rX, glm::vec3(1.0f, 0.0f, 0.0f));
+		M = glm::rotate(M, rY, glm::vec3(0.0f, 1.0f, 0.0f));
+		MV = V * M;
 		//get the camera position
 		glm::vec3 camPos = glm::vec3(glm::inverse(MV)*glm::vec4(0, 0, 0, 1));
 
@@ -208,10 +215,10 @@ void mainLoop(GLFWwindow* window)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		//get the combined modelview projection matrix
-		glm::mat4 MVP = P*MV;
+		glm::mat4 MVP = P * V * M;
 
 		//render grid
-		//grid->Render(glm::value_ptr(MVP));
+		grid->Render(glm::value_ptr(MVP));
 
 		//enable blending and bind the cube vertex array object
 		glEnable(GL_BLEND);
@@ -251,31 +258,25 @@ void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 	else {
 		isPressed = false;
 	}
-
-	if (button == GLFW_MOUSE_BUTTON_RIGHT)
-		state = 0;
-	else
-		state = 1;
 }
 
 void MousePosCallback(GLFWwindow* window, double xd, double yd)
 {
 	if (isPressed) {
-		if (state == 0) {
-			dist += ((float)yd - oldY) / 50.0f;
-		}
-		else {
-			rX += ((float)yd - oldY) / 5.0f;
-			rY += ((float)xd - oldX) / 5.0f;
-		}
+		rX += ((float)yd - oldY) / 5.0f;
+		rY += ((float)xd - oldX) / 5.0f;
 		oldX = (int)xd;
 		oldY = (int)yd;
+		//cout << "rX: " << rX << endl;
+		//cout << "rY: " << rY << endl;
+		//cout << "##########" << endl;
 	}
 }
 
 void MouseScrollCallback(GLFWwindow* window, double xd, double yd)
 {
-	dist += (float)yd;
+	dist += 0.1f * (float)yd;
+	//cout << "dist: " << dist << endl;
 }
 
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
