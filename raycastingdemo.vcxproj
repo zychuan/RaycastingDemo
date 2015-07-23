@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{7CBBBF51-7A11-45FA-AF99-16B706806413}</ProjectGuid>
+    <ProjectGuid>{4FC21D17-5E15-4981-9626-036B3B114BE9}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>raycastingdemo</RootNamespace>
   </PropertyGroup>

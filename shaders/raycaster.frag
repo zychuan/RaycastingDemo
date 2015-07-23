@@ -58,25 +58,34 @@ void main()
 	vec3 geomDir = normalize((vUV-vec3(0.5)) - camPos); 
 	vec3 dirStep = geomDir * step_size; 
 	bool stop = false; 
-	
+
 	for (int i = 0; i < MAX_SAMPLES; i++) {
 		dataPos = dataPos + dirStep;
-		stop = dot(sign(dataPos-texMin),sign(texMax-dataPos)) < 3.0;	
+		stop = dot(sign(dataPos-texMin), sign(texMax-dataPos)) < 3.0;	
 		if (stop) 
 			break;
 		float sample = texture(volume, dataPos).r;
 		float sample2 = texture(volume, dataPos+dirStep).r;
 
-		if( (sample -isoValue) < 0  && (sample2-isoValue) >= 0.0)  {
+		if(((sample - isoValue) <= 0.0 && (sample2 - isoValue) >= 0.0))  {
 			vec3 xN = dataPos;
 			vec3 xF = dataPos+dirStep;	
 			vec3 tc = Bisection(xN, xF, isoValue);
 			vec3 N = GetGradient(tc);
 			vec3 V = -geomDir;
 			vec3 L =  V;
-			vFragColor =  PhongLighting(L,N,V,250, vec3(0.5));	
-			//vFragColor = vec4(0.6,0.6,0.6,1);
+			vFragColor =  PhongLighting(L, N, V, 250, vec3(0.5));	
 			break;
-		} 
+		}
+		if ( (sample - isoValue) >= 0.0 && (sample2 - isoValue) >= 0.0 ) {
+			vec3 xN = dataPos-dirStep;
+			vec3 xF = dataPos;	
+			vec3 tc = Bisection(xN, xF, isoValue);
+			vec3 N = GetGradient(tc);
+			vec3 V = -geomDir;
+			vec3 L =  V;
+			vFragColor =  PhongLighting(L, N, V, 250, vec3(0.5));	
+			break;
+		}
 	} 
 }

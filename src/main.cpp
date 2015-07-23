@@ -2,6 +2,7 @@
 #include "Grid.h"
 #include <time.h>
 #include <fstream>
+#include <sstream>
 
 #define GL_CHECK_ERRORS assert(glGetError()== GL_NO_ERROR);
 
@@ -35,7 +36,8 @@ GLSLShader shader;
 glm::vec4 bg = glm::vec4(1.0, 1.0, 1.0, 1);
 
 //volume dataset filename 
-const std::string volume_file = "media/fluid128.raw";
+//const std::string volume_file = "media/fluid.raw";
+const int frameNums = 150;
 
 //volume dimensions
 const int XDIM = 128;
@@ -44,9 +46,15 @@ const int ZDIM = 128;
 
 //volume texture ID
 GLuint textureID;
+GLuint *textureIDs = new GLuint[frameNums];
 
-bool LoadVolume() {
-	std::ifstream infile(volume_file.c_str(), std::ios_base::binary);
+bool isAnimate = true;
+
+bool LoadVolume(int frame) {
+	std::stringstream volume_file;
+	volume_file << "media/fluid" << frame << ".raw";
+
+	std::ifstream infile(volume_file.str().c_str(), std::ios_base::binary);
 
 	if (infile.good()) {
 		//read the volume data file
@@ -55,8 +63,8 @@ bool LoadVolume() {
 		infile.close();
 
 		//generate OpenGL texture
-		glGenTextures(1, &textureID);
-		glBindTexture(GL_TEXTURE_3D, textureID);
+		glGenTextures(1, &textureIDs[frame]);
+		glBindTexture(GL_TEXTURE_3D, textureIDs[frame]);
 
 		// set the texture parameters
 		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP);
@@ -85,12 +93,20 @@ bool LoadVolume() {
 	}
 }
 
+bool LoadVolumes() {
+	for (int i = 0; i < frameNums; i++) {
+		if (!LoadVolume(i))
+			return false;
+	}
+	return true;
+}
+
 void initGL() {
 
 	GL_CHECK_ERRORS
 
 	// create a uniform grid of size 20x20 in XZ plane
-	grid = new CGrid(20, 20);
+	//grid = new CGrid(20, 20);
 
 	GL_CHECK_ERRORS
 	
@@ -117,7 +133,7 @@ void initGL() {
 	GL_CHECK_ERRORS
 
 		//load volume data
-		if (LoadVolume()) {
+		if (LoadVolumes()) {
 			std::cout << "Volume data loaded successfully." << std::endl;
 		}
 		else {
@@ -188,6 +204,7 @@ void cameraInit(int w, int h)
 	P = glm::perspective(45.0f, (float)w / (float)h, 0.1f, 1000.0f);
 }
 
+static int currentFrame = 0;
 void mainLoop(GLFWwindow* window)
 {
 	initGL();
@@ -218,7 +235,7 @@ void mainLoop(GLFWwindow* window)
 		glm::mat4 MVP = P * V * M;
 
 		//render grid
-		grid->Render(glm::value_ptr(MVP));
+		//grid->Render(glm::value_ptr(MVP));
 
 		//enable blending and bind the cube vertex array object
 		glEnable(GL_BLEND);
@@ -228,6 +245,13 @@ void mainLoop(GLFWwindow* window)
 		//pass shader uniforms
 		glUniformMatrix4fv(shader("MVP"), 1, GL_FALSE, glm::value_ptr(MVP));
 		glUniform3fv(shader("camPos"), 1, &(camPos.x));
+
+		if (currentFrame >= frameNums)
+			currentFrame = 0;
+
+		glBindTexture(GL_TEXTURE_3D, textureIDs[currentFrame]);
+		if (isAnimate) currentFrame++;
+
 		//render the cube
 		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, 0);
 		//unbind the raycasting shader
@@ -281,6 +305,8 @@ void MouseScrollCallback(GLFWwindow* window, double xd, double yd)
 
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
 	if (action == GLFW_PRESS) {
+		if (key == GLFW_KEY_S)
+			isAnimate = !isAnimate;
 	}
 }
 
